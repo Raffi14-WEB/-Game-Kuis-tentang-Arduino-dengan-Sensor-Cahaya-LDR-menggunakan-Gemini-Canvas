@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petualangan Kuis Pintar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body class="bg-indigo-950 text-white font-sans min-h-screen flex flex-col items-center p-4">
+
+    <!-- Container Utama -->
+    <div id="app" class="max-w-md w-full bg-indigo-900 rounded-3xl p-6 shadow-2xl border border-indigo-700">
+        <!-- Konten Dinamis -->
+        <div id="content"></div>
+    </div>
+
+    <script>
+        // Data Kuis (7 Misi, 5 Kuis per Misi)
+        const missions = Array.from({ length: 7 }, (_, m) => ({
+            id: m + 1,
+            questions: Array.from({ length: 5 }, (_, q) => ({
+                img: `https://picsum.photos/id/${(m * 5) + q + 10}/400/300`,
+                answer: ["Apel", "Buku", "Kucing", "Mobil", "Gunung"][q],
+                options: ["Apel", "Buku", "Kucing", "Mobil", "Gunung"].sort(() => Math.random() - 0.5)
+            }))
+        }));
+
+        let state = { name: "", mission: 0, question: 0, xp: 0 };
+
+        function render() {
+            const container = document.getElementById('content');
+            if (!state.name) {
+                container.innerHTML = `
+                    <h1 class="text-3xl font-bold mb-4 text-center">Selamat Datang!</h1>
+                    <p class="mb-6 text-center text-indigo-200">Siap menguji pengetahuanmu dan mengumpulkan XP?</p>
+                    <input id="nameInput" type="text" placeholder="Masukkan nama Anda..." class="w-full p-3 rounded-xl text-black mb-4">
+                    <button onclick="startGame()" class="w-full bg-emerald-500 hover:bg-emerald-600 p-3 rounded-xl font-bold">Mulai Petualangan</button>
+                `;
+            } else {
+                const currentMission = missions[state.mission];
+                const q = currentMission.questions[state.question];
+                container.innerHTML = `
+                    <div class="flex justify-between mb-4">
+                        <span>XP: <b>${state.xp}</b></span>
+                        <span>Misi ${state.mission + 1}/7</span>
+                    </div>
+                    <img src="${q.img}" class="rounded-2xl w-full h-48 object-cover mb-4">
+                    <div class="grid grid-cols-1 gap-2">
+                        ${q.options.map(opt => `<button onclick="check('${opt}')" class="p-3 bg-indigo-800 rounded-lg hover:bg-indigo-600">${opt}</button>`).join('')}
+                    </div>
+                `;
+            }
+        }
+
+        function startGame() {
+            const name = document.getElementById('nameInput').value;
+            if (name) { state.name = name; render(); }
+        }
+
+        function check(ans) {
+            const correct = missions[state.mission].questions[state.question].answer;
+            if (ans === correct) state.xp += 100;
+            
+            state.question++;
+            if (state.question >= 5) {
+                state.question = 0;
+                state.mission++;
+            }
+            if (state.mission >= 7) {
+                alert("Selamat " + state.name + "! Anda telah menyelesaikan semua misi dengan total XP: " + state.xp);
+                location.reload();
+            } else {
+                render();
+            }
+        }
+
+        render();
+    </script>
+</body>
+</html>
