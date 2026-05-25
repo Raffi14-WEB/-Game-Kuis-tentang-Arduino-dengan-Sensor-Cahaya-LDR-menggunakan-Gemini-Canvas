@@ -3,82 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Petualangan Kuis Pintar</title>
+    <title>Petualangan Tebak Gambar</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .fade-in { animation: fadeIn 0.5s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        body { background: #f0f4f8; font-family: 'Segoe UI', sans-serif; }
+        .hidden { display: none; }
+        .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
-<body class="bg-indigo-950 text-white font-sans min-h-screen flex flex-col items-center p-4">
+<body class="min-h-screen flex items-center justify-center p-4">
 
-    <!-- Container Utama -->
-    <div id="app" class="max-w-md w-full bg-indigo-900 rounded-3xl p-6 shadow-2xl border border-indigo-700">
-        <!-- Konten Dinamis -->
-        <div id="content"></div>
+    <!-- Halaman 1: Selamat Datang -->
+    <div id="welcome-screen" class="card p-8 max-w-md w-full text-center">
+        <h1 class="text-3xl font-bold text-blue-600 mb-4">Selamat Datang!</h1>
+        <p class="mb-6 text-gray-600">Siap untuk petualangan tebak gambar? Kumpulkan XP dan jadilah juara!</p>
+        <button onclick="showScreen('name-screen')" class="bg-blue-500 text-white px-6 py-2 rounded-full font-bold hover:bg-blue-600">Mulai Sekarang</button>
+    </div>
+
+    <!-- Halaman 2: Input Nama -->
+    <div id="name-screen" class="card p-8 max-w-md w-full hidden text-center">
+        <h2 class="text-2xl font-bold mb-4">Siapa Nama Kamu?</h2>
+        <input type="text" id="username" placeholder="Masukkan nama..." class="w-full p-2 border rounded mb-4 text-center">
+        <button onclick="startGame()" class="bg-green-500 text-white px-6 py-2 rounded-full font-bold hover:bg-green-600">Lanjut ke Misi</button>
+    </div>
+
+    <!-- Halaman 3: Permainan -->
+    <div id="game-screen" class="card p-8 max-w-lg w-full hidden">
+        <div class="flex justify-between mb-4 text-sm font-bold">
+            <span id="player-display"></span>
+            <span>XP: <span id="xp-display">0</span></span>
+        </div>
+        <div id="mission-info" class="mb-4 text-blue-700 font-bold"></div>
+        <div id="image-container" class="w-full h-48 bg-gray-200 flex items-center justify-center rounded-lg mb-4 text-gray-500">
+            [Area Gambar Misi]
+        </div>
+        <div id="options-container" class="grid grid-cols-2 gap-3"></div>
     </div>
 
     <script>
-        // Data Kuis (7 Misi, 5 Kuis per Misi)
-        const missions = Array.from({ length: 7 }, (_, m) => ({
-            id: m + 1,
-            questions: Array.from({ length: 5 }, (_, q) => ({
-                img: `https://picsum.photos/id/${(m * 5) + q + 10}/400/300`,
-                answer: ["Apel", "Buku", "Kucing", "Mobil", "Gunung"][q],
-                options: ["Apel", "Buku", "Kucing", "Mobil", "Gunung"].sort(() => Math.random() - 0.5)
+        let userData = { name: "", xp: 0, mission: 0, quizIndex: 0 };
+        
+        // Contoh data kuis (Silakan sesuaikan dengan materi Anda)
+        const quizData = Array.from({ length: 7 }, (_, m) => 
+            Array.from({ length: 5 }, (_, q) => ({
+                question: `Misi ${m+1} - Pertanyaan ${q+1}`,
+                options: ["Jawaban A", "Jawaban B", "Jawaban C", "Jawaban D"],
+                answer: "Jawaban A"
             }))
-        }));
+        );
 
-        let state = { name: "", mission: 0, question: 0, xp: 0 };
-
-        function render() {
-            const container = document.getElementById('content');
-            if (!state.name) {
-                container.innerHTML = `
-                    <h1 class="text-3xl font-bold mb-4 text-center">Selamat Datang!</h1>
-                    <p class="mb-6 text-center text-indigo-200">Siap menguji pengetahuanmu dan mengumpulkan XP?</p>
-                    <input id="nameInput" type="text" placeholder="Masukkan nama Anda..." class="w-full p-3 rounded-xl text-black mb-4">
-                    <button onclick="startGame()" class="w-full bg-emerald-500 hover:bg-emerald-600 p-3 rounded-xl font-bold">Mulai Petualangan</button>
-                `;
-            } else {
-                const currentMission = missions[state.mission];
-                const q = currentMission.questions[state.question];
-                container.innerHTML = `
-                    <div class="flex justify-between mb-4">
-                        <span>XP: <b>${state.xp}</b></span>
-                        <span>Misi ${state.mission + 1}/7</span>
-                    </div>
-                    <img src="${q.img}" class="rounded-2xl w-full h-48 object-cover mb-4">
-                    <div class="grid grid-cols-1 gap-2">
-                        ${q.options.map(opt => `<button onclick="check('${opt}')" class="p-3 bg-indigo-800 rounded-lg hover:bg-indigo-600">${opt}</button>`).join('')}
-                    </div>
-                `;
-            }
+        function showScreen(id) {
+            document.querySelectorAll('div[id$="-screen"]').forEach(s => s.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
         }
 
         function startGame() {
-            const name = document.getElementById('nameInput').value;
-            if (name) { state.name = name; render(); }
+            userData.name = document.getElementById('username').value || "Pemain";
+            document.getElementById('player-display').innerText = userData.name;
+            showScreen('game-screen');
+            loadQuiz();
         }
 
-        function check(ans) {
-            const correct = missions[state.mission].questions[state.question].answer;
-            if (ans === correct) state.xp += 100;
+        function loadQuiz() {
+            const quiz = quizData[userData.mission][userData.quizIndex];
+            document.getElementById('mission-info').innerText = `Misi ${userData.mission + 1} - Soal ${userData.quizIndex + 1}`;
             
-            state.question++;
-            if (state.question >= 5) {
-                state.question = 0;
-                state.mission++;
-            }
-            if (state.mission >= 7) {
-                alert("Selamat " + state.name + "! Anda telah menyelesaikan semua misi dengan total XP: " + state.xp);
-                location.reload();
-            } else {
-                render();
-            }
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            quiz.options.sort(() => Math.random() - 0.5).forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "p-3 bg-blue-100 hover:bg-blue-200 rounded-lg transition";
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(opt, quiz.answer);
+                container.appendChild(btn);
+            });
         }
 
-        render();
+        function checkAnswer(selected, correct) {
+            if (selected === correct) {
+                userData.xp += 20;
+                document.getElementById('xp-display').innerText = userData.xp;
+            }
+            
+            userData.quizIndex++;
+            if (userData.quizIndex >= 5) {
+                userData.quizIndex = 0;
+                userData.mission++;
+                if (userData.mission >= 7) {
+                    alert("Selamat! Kamu menyelesaikan semua misi.");
+                    location.reload();
+                    return;
+                }
+            }
+            loadQuiz();
+        }
     </script>
 </body>
 </html>
